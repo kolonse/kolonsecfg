@@ -1,30 +1,23 @@
+// assert
 package cfg
 
 import (
+	"errors"
 	"reflect"
-	"testing"
 )
 
-func assertEqual(t *testing.T, left, right interface{}, err string) {
+func AssertEqual(left, right interface{}, err string) {
 	if reflect.TypeOf(left).Kind() != reflect.TypeOf(right).Kind() {
-		t.Error(err)
+		panic(errors.New("类型不匹配"))
 	}
 	switch reflect.TypeOf(left).Kind() {
 	case reflect.Bool:
 		if reflect.ValueOf(left).Bool() != reflect.ValueOf(right).Bool() {
-			t.Error(err)
+			panic(errors.New(err))
 		}
 	case reflect.String:
 		if reflect.ValueOf(left).String() != reflect.ValueOf(right).String() {
-			t.Error(err)
+			panic(errors.New(err))
 		}
 	}
-}
-
-func TestNewNode(t *testing.T) {
-	node := NewNode("root")
-	child := NewNode("child")
-	child.key = "child"
-	node.AddChild(child)
-	assertEqual(t, "child", node.Childs("child")[0].key, "not child")
 }

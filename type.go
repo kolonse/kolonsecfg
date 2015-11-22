@@ -1,7 +1,8 @@
 package cfg
 
 const (
-	INT = iota
+	INVALID = iota
+	INT
 	BOOL
 	STRING
 	DOUBLE

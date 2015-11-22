@@ -46,6 +46,14 @@ type Node struct {
 	mx      sync.Mutex
 }
 
+func (n *Node) SetKey(key string) {
+	n.key = key
+}
+
+func (n *Node) SetValue(value *Value) {
+	n.value = value
+}
+
 func (n *Node) SetFarther(farther *Node) {
 	n.farther = farther
 }
@@ -70,9 +78,19 @@ func (n *Node) Childs(key string) []*Node {
 	defer n.mx.Unlock()
 	nodes, ok := n.childs[key]
 	if !ok {
-		return []*Node{}
+		return nil
 	}
 	return nodes.Get()
+}
+
+func (n *Node) Child(key string) *Node {
+	n.mx.Lock()
+	defer n.mx.Unlock()
+	nodes, ok := n.childs[key]
+	if !ok {
+		return nil
+	}
+	return nodes.Get()[0]
 }
 
 func (n *Node) AddChilds(childs []*Node) {

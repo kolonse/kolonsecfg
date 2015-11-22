@@ -16,6 +16,16 @@ type Value struct {
 	ValueType int               // 值类型
 }
 
+func (v *Value) GetBool() bool {
+	AssertEqual(v.ValueType, BOOL, "Not Bool")
+	return v.Bool
+}
+
+func (v *Value) GetString() string {
+	AssertEqual(v.ValueType, STRING, "Not String")
+	return v.String
+}
+
 func NewValue(valueType int, v interface{}) *Value {
 	value := &Value{
 		ValueType: valueType,
