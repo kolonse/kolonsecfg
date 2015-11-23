@@ -60,11 +60,13 @@ func (cfg *Cfg) parseValue(offset int, farther *Node) int {
 	isGetKey := false
 	isValueString := true
 	valueIndex := -1
+	keyIndex := -1
 	end := false
 	var v *Value
 	for i < len(cfg.content) {
 		c := cfg.content[i]
 		switch {
+		//将头部的无效字符去除
 		case ARRAY_S == c && !isGetKey:
 			// 解析数组
 			isValueString = false
@@ -73,18 +75,28 @@ func (cfg *Cfg) parseValue(offset int, farther *Node) int {
 			// 解析对象
 			isValueString = false
 			fallthrough
-		case ' ' == c && !isGetKey:
-			key = cfg.content[offset:i]
+		case (' ' == c || '\t' == c || '\r' == c || '\n' == c) && !isGetKey && keyIndex == -1:
+		case (' ' != c && '\t' != c) && !isGetKey:
+			if keyIndex == -1 {
+				keyIndex = i
+			}
+		case ' ' == c && !isGetKey && keyIndex != -1:
+			key = cfg.content[keyIndex:i]
 			isGetKey = true
 		case (' ' == c || '\t' == c) && isGetKey: // 如果是多个 空格那么让索引加一
 		case ' ' != c && isGetKey && valueIndex == -1:
 			// 如果获取到 key 以后 那么 value 的值起始位置在 ' ' 后
 			valueIndex = i
+			if i == len(cfg.content)-1 {
+				v = NewValue(STRING, cfg.content[valueIndex:i+1])
+				end = true
+			}
 		case '\r' == c || '\n' == c || i == len(cfg.content)-1:
 			if !isGetKey {
 				key = cfg.content[offset:i]
 				isGetKey = true
 			}
+
 			if isValueString && valueIndex != -1 {
 				if i == len(cfg.content)-1 {
 					v = NewValue(STRING, cfg.content[valueIndex:i+1])
