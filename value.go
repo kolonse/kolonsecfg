@@ -11,8 +11,8 @@ type Value struct {
 	Int       int64             //整形
 	String    string            // 字符串类型
 	Double    float64           // 浮点数类型
-	Array     []*Value          // 数组类型 []
-	Object    map[string]*Value //对象类型 {}
+	Array     []*Value          // 数组类型 []  弃用
+	Object    map[string]*Value //对象类型 {} 弃用
 	ValueType int               // 值类型
 }
 

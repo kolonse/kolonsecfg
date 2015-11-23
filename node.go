@@ -93,6 +93,29 @@ func (n *Node) Child(key string) *Node {
 	return nodes.Get()[0]
 }
 
+func (n *Node) Dump(suffix string) string {
+	ret := ""
+	// node 值不为空时进行打印
+	if !(n.key == "" && n.value == nil) {
+		ret += suffix + n.key + " " + n.value.GetString() + "\n"
+	} else if n.key != "" {
+		ret += suffix + n.key + " {\n"
+		for _, nodes := range n.childs {
+			for _, node := range nodes.Get() {
+				ret += node.Dump(suffix + "\t")
+			}
+		}
+		ret += suffix + "}\n"
+	} else {
+		for _, nodes := range n.childs {
+			for _, node := range nodes.Get() {
+				ret += node.Dump(suffix + "\t")
+			}
+		}
+	}
+	return ret
+}
+
 func (n *Node) AddChilds(childs []*Node) {
 	//	n.child = append(n.child, childs...)
 	//	for _, i := range childs {
