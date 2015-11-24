@@ -53,86 +53,86 @@ func (cfg *Cfg) parseComment(offset int, farther *Node) int {
 	return i + 1
 }
 
-func (cfg *Cfg) parseValue(offset int, farther *Node) int {
-	i := offset
-	key := ""
-	// 读取KEY 完成与否标志
-	isGetKey := false
-	isValueString := true
-	valueIndex := -1
-	keyIndex := -1
-	end := false
-	var v *Value
-	for i < len(cfg.content) {
-		c := cfg.content[i]
-		switch {
-		//将头部的无效字符去除
-		case ARRAY_S == c && !isGetKey:
-			// 解析数组
-			isValueString = false
-			fallthrough
-		case OBJECT_S == c && !isGetKey:
-			// 解析对象
-			isValueString = false
-			fallthrough
-		case (' ' == c || '\t' == c || '\r' == c || '\n' == c) && !isGetKey && keyIndex == -1:
-		case (' ' != c && '\t' != c) && !isGetKey:
-			if keyIndex == -1 {
-				keyIndex = i
-			}
-		case ' ' == c && !isGetKey && keyIndex != -1:
-			key = cfg.content[keyIndex:i]
-			isGetKey = true
-		case (' ' == c || '\t' == c) && isGetKey: // 如果是多个 空格那么让索引加一
-		case ' ' != c && isGetKey && valueIndex == -1:
-			// 如果获取到 key 以后 那么 value 的值起始位置在 ' ' 后
-			valueIndex = i
-			if i == len(cfg.content)-1 {
-				v = NewValue(STRING, cfg.content[valueIndex:i+1])
-				end = true
-			}
-		case '\r' == c || '\n' == c || i == len(cfg.content)-1:
-			if !isGetKey {
-				key = cfg.content[offset:i]
-				isGetKey = true
-			}
+func (cfg *Cfg) parseObject(key string, offset int, farther *Node) int {
+	return 0
+}
 
-			if isValueString && valueIndex != -1 {
-				if i == len(cfg.content)-1 {
-					v = NewValue(STRING, cfg.content[valueIndex:i+1])
-				} else {
-					v = NewValue(STRING, cfg.content[valueIndex:i])
-				}
-			}
-			// 添加完成节点后要进行返回
-			end = true
-		}
-		if end {
-			if isGetKey && v == nil {
-				panic(errors.New("只有关键字没有值"))
-			} else if isGetKey && v != nil {
-				// 获取到关键字和获取到值
-				n := NewNode(key)
-				n.SetValue(v)
-				farther.AddChild(n)
-			} else {
-				// 当前行没有获取到任何内容
-			}
-			break
-		} else {
-			i += 1
+func (cfg *Cfg) parseArray(key string, offset int, farther *Node) int {
+	return 0
+}
+
+func (cfg *Cfg) parseString(offset int) (string, int) {
+	i := offset
+	for ; i < len(cfg.content); i++ {
+		c := cfg.content[i]
+		if '\r' == c || '\n' == c {
+			return cfg.content[offset:i], i + 1
+		} else if i == len(cfg.content)-1 {
+			return cfg.content[offset : i+1], i + 1
 		}
 	}
+	panic(errors.New("string 值不存在"))
+	return "", -1
+}
 
-	return i + 1
+func (cfg *Cfg) parseKey(offset int) (string, int) {
+	i := offset
+	key := ""
+	keyIndex := i
+	for ; i < len(cfg.content); i++ {
+		c := cfg.content[i]
+		switch {
+		case ARRAY_S == c:
+			fallthrough
+		case OBJECT_S == c:
+			fallthrough
+		case ' ' == c || '\t' == c:
+			key = cfg.content[keyIndex:i]
+			println(key)
+			return key, i
+		case '\r' == c || '\n' == c:
+			panic(errors.New("关键字没有值"))
+		}
+	}
+	panic(errors.New("配置格式应该为[key value/{}/[]]"))
+	return "", i
+}
+
+func (cfg *Cfg) parseValue(key string, offset int) (*Node, int) {
+	// 开始进行值处理
+	i := offset
+	for ; i < len(cfg.content); i++ {
+		c := cfg.content[i]
+		switch {
+		case ARRAY_S == c: // 数组值
+
+		case OBJECT_S == c: // 对象值
+
+		case ' ' != c && '\t' != c: // 字符串值
+			n := NewNode(key)
+			value, index := cfg.parseString(i)
+			v := NewValue(STRING, value)
+			n.SetValue(v)
+			return n, index
+		}
+	}
+	panic(errors.New("配置错误 只有关键字没有值"))
+	return nil, -1
+}
+
+func (cfg *Cfg) parseAttr(offset int, farther *Node) int {
+	key, i := cfg.parseKey(offset)
+	n, i := cfg.parseValue(key, i)
+	farther.AddChild(n)
+	return i
 }
 
 func (cfg *Cfg) ParseFile(path string) *Cfg {
 	cont := cfg.readFile(path)
-	return cfg.ParseString(cont)
+	return cfg.ParseByString(cont)
 }
 
-func (cfg *Cfg) ParseString(content string) *Cfg {
+func (cfg *Cfg) ParseByString(content string) *Cfg {
 	cfg.content = content
 	// 遍历BUFF 对内容进行解析
 	//row := 0
@@ -145,7 +145,7 @@ func (cfg *Cfg) ParseString(content string) *Cfg {
 		case 'a' <= c && 'z' >= c:
 			fallthrough
 		case 'A' <= c && 'Z' >= c:
-			offset = cfg.parseValue(i, cfg.root)
+			offset = cfg.parseAttr(i, cfg.root)
 		default:
 			offset = i + 1
 		}
