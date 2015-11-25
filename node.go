@@ -1,8 +1,6 @@
 package cfg
 
-import (
-	"sync"
-)
+import ()
 
 const (
 	ONCE_CAP_LEN = 10
@@ -39,11 +37,10 @@ func NewNodes() *Nodes {
 }
 
 type Node struct {
-	key     string
-	value   *Value
+	key string
+	*Value
 	farther *Node
 	childs  map[string]*Nodes
-	mx      sync.Mutex
 }
 
 func (n *Node) SetKey(key string) {
@@ -51,7 +48,7 @@ func (n *Node) SetKey(key string) {
 }
 
 func (n *Node) SetValue(value *Value) {
-	n.value = value
+	n.Value = value
 }
 
 func (n *Node) SetFarther(farther *Node) {
@@ -59,9 +56,6 @@ func (n *Node) SetFarther(farther *Node) {
 }
 
 func (n *Node) AddChild(child *Node) *Node {
-	//nodes,ok :=
-	n.mx.Lock()
-	defer n.mx.Unlock()
 	nodes, ok := n.childs[child.key]
 	if !ok { // 如果不存在该 key 那么就创建
 		nodes = NewNodes()
@@ -74,8 +68,6 @@ func (n *Node) AddChild(child *Node) *Node {
 }
 
 func (n *Node) Childs(key string) []*Node {
-	n.mx.Lock()
-	defer n.mx.Unlock()
 	nodes, ok := n.childs[key]
 	if !ok {
 		return nil
@@ -84,8 +76,6 @@ func (n *Node) Childs(key string) []*Node {
 }
 
 func (n *Node) Child(key string) *Node {
-	n.mx.Lock()
-	defer n.mx.Unlock()
 	nodes, ok := n.childs[key]
 	if !ok {
 		return nil
@@ -96,8 +86,8 @@ func (n *Node) Child(key string) *Node {
 func (n *Node) Dump(suffix string) string {
 	ret := ""
 	// node 值不为空时进行打印
-	if !(n.key == "" && n.value == nil) {
-		ret += suffix + n.key + " " + n.value.GetString() + "\n"
+	if n.key != "" && n.Value != nil && n.Value.ValueType != INVALID {
+		ret += suffix + n.key + " " + n.Value.GetString() + "\n"
 	} else if n.key != "" {
 		ret += suffix + n.key + " {\n"
 		for _, nodes := range n.childs {

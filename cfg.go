@@ -38,57 +38,86 @@ func (cfg *Cfg) readFile(path string) string {
 	return string(buff)
 }
 
-func (cfg *Cfg) parseComment(offset int, farther *Node) int {
+func (cfg *Cfg) parseComment(content string, offset int, farther *Node) int {
 	n := NewNode("#")
 	i := offset + 1
-	for ; i < len(cfg.content); i++ {
+	for ; i < len(content); i++ {
 		// 只要碰到 \r 或者 \n 那么直接跳出
-		if cfg.content[i] == '\r' || cfg.content[i] == '\n' {
+		if content[i] == '\r' || content[i] == '\n' {
 			break
 		}
 	}
-	v := NewValue(STRING, cfg.content[offset+1:i])
+	v := NewValue(STRING, content[offset+1:i])
 	n.SetValue(v)
 	farther.AddChild(n)
 	return i + 1
 }
 
-func (cfg *Cfg) parseObject(key string, offset int, farther *Node) int {
-	return 0
-}
-
-func (cfg *Cfg) parseArray(key string, offset int, farther *Node) int {
-	return 0
-}
-
-func (cfg *Cfg) parseString(offset int) (string, int) {
+func (cfg *Cfg) parseObject(content string, key string, offset int, farther *Node) int {
+	stack := 1
 	i := offset
-	for ; i < len(cfg.content); i++ {
-		c := cfg.content[i]
+	for ; stack != 0 && i < len(content); i++ {
+		if content[i] == '{' {
+			stack++
+		} else if content[i] == '}' {
+			stack--
+		}
+	}
+	if stack != 0 {
+		panic(errors.New("{ 不匹配 } 数目"))
+	} else {
+		childString := content[offset:i]
+		cfg.parseByString(childString, farther)
+	}
+	return i + 1
+}
+
+func (cfg *Cfg) parseArray(content string, key string, offset int, farther *Node) int {
+	stack := 1
+	i := offset
+	for ; stack != 0 && i < len(content); i++ {
+		if content[i] == '[' {
+			stack++
+		} else if content[i] == ']' {
+			stack--
+		}
+	}
+	if stack != 0 {
+		panic(errors.New("[ 不匹配 ] 数目"))
+	} else {
+		childString := content[offset:i]
+		cfg.parseByString(childString, farther)
+	}
+	return i + 1
+}
+
+func (cfg *Cfg) parseString(content string, offset int) (string, int) {
+	i := offset
+	for ; i < len(content); i++ {
+		c := content[i]
 		if '\r' == c || '\n' == c {
-			return cfg.content[offset:i], i + 1
-		} else if i == len(cfg.content)-1 {
-			return cfg.content[offset : i+1], i + 1
+			return content[offset:i], i + 1
+		} else if i == len(content)-1 {
+			return content[offset : i+1], i + 1
 		}
 	}
 	panic(errors.New("string 值不存在"))
 	return "", -1
 }
 
-func (cfg *Cfg) parseKey(offset int) (string, int) {
+func (cfg *Cfg) parseKey(content string, offset int) (string, int) {
 	i := offset
 	key := ""
 	keyIndex := i
-	for ; i < len(cfg.content); i++ {
-		c := cfg.content[i]
+	for ; i < len(content); i++ {
+		c := content[i]
 		switch {
 		case ARRAY_S == c:
 			fallthrough
 		case OBJECT_S == c:
 			fallthrough
 		case ' ' == c || '\t' == c:
-			key = cfg.content[keyIndex:i]
-			println(key)
+			key = content[keyIndex:i]
 			return key, i
 		case '\r' == c || '\n' == c:
 			panic(errors.New("关键字没有值"))
@@ -98,19 +127,23 @@ func (cfg *Cfg) parseKey(offset int) (string, int) {
 	return "", i
 }
 
-func (cfg *Cfg) parseValue(key string, offset int) (*Node, int) {
+func (cfg *Cfg) parseValue(content string, key string, offset int) (*Node, int) {
 	// 开始进行值处理
 	i := offset
-	for ; i < len(cfg.content); i++ {
-		c := cfg.content[i]
+	for ; i < len(content); i++ {
+		c := content[i]
 		switch {
 		case ARRAY_S == c: // 数组值
-
+			n := NewNode(key)
+			index := cfg.parseArray(content, key, i+1, n)
+			return n, index
 		case OBJECT_S == c: // 对象值
-
+			n := NewNode(key)
+			index := cfg.parseObject(content, key, i+1, n)
+			return n, index
 		case ' ' != c && '\t' != c: // 字符串值
 			n := NewNode(key)
-			value, index := cfg.parseString(i)
+			value, index := cfg.parseString(content, i)
 			v := NewValue(STRING, value)
 			n.SetValue(v)
 			return n, index
@@ -120,43 +153,57 @@ func (cfg *Cfg) parseValue(key string, offset int) (*Node, int) {
 	return nil, -1
 }
 
-func (cfg *Cfg) parseAttr(offset int, farther *Node) int {
-	key, i := cfg.parseKey(offset)
-	n, i := cfg.parseValue(key, i)
+func (cfg *Cfg) parseAttr(content string, offset int, farther *Node) int {
+	key, i := cfg.parseKey(content, offset)
+	n, i := cfg.parseValue(content, key, i)
 	farther.AddChild(n)
 	return i
 }
 
-func (cfg *Cfg) ParseFile(path string) *Cfg {
-	cont := cfg.readFile(path)
-	return cfg.ParseByString(cont)
-}
-
-func (cfg *Cfg) ParseByString(content string) *Cfg {
-	cfg.content = content
+func (cfg *Cfg) parseByString(content string, farther *Node) {
 	// 遍历BUFF 对内容进行解析
 	//row := 0
-	for i := 0; i < len(cfg.content); {
+	for i := 0; i < len(content); {
 		var offset int
-		c := cfg.content[i]
+		c := content[i]
 		switch {
 		case COMMENT_B == c:
-			offset = cfg.parseComment(i, cfg.root)
+			offset = cfg.parseComment(content, i, farther)
 		case 'a' <= c && 'z' >= c:
 			fallthrough
 		case 'A' <= c && 'Z' >= c:
-			offset = cfg.parseAttr(i, cfg.root)
+			offset = cfg.parseAttr(content, i, farther)
 		default:
 			offset = i + 1
 		}
 		i = offset
 	}
+}
+
+func (cfg *Cfg) ParseFile(path string) *Cfg {
+	content := cfg.readFile(path)
+	return cfg.ParseByString(content)
+}
+
+func (cfg *Cfg) ParseByString(content string) *Cfg {
+	cfg.content = content
+	cfg.parseByString(content, cfg.root)
 	return cfg
 }
 
 func (cfg *Cfg) Dump() string {
 	//childs := cfg.root.Childs()
 	return cfg.root.Dump("")
+}
+
+func (cfg *Cfg) Value(key string) *Node {
+	//childs := cfg.root.Childs()
+	return cfg.root.Child(key)
+}
+
+func (cfg *Cfg) Values(key string) []*Node {
+	//childs := cfg.root.Childs()
+	return cfg.root.Childs(key)
 }
 
 func NewCfg() *Cfg {

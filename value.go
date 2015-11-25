@@ -63,7 +63,7 @@ func NewValue(valueType int, v interface{}) *Value {
 			panic(errors.New("数值类型非 array 类型,而是 " + reflect.TypeOf(v).String()))
 		}
 	case OBJECT:
-		if t == reflect.Map { // 只要是整数全部转为 int64 避免麻烦
+		if t == reflect.Map {
 			//			value.Int = v.(int64)
 			value.Object = make(map[string]*Value)
 			for key, vlu := range v.(map[string]*Value) {
