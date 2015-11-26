@@ -19,4 +19,8 @@ func TestParseFile(t *testing.T) {
 	v = cfg.Value("dev").GetString()
 	t.Log(v, " ", len(v))
 	assertEqual(t, v, "true", "not equal,0 real:"+v)
+	assertEqual(t, cfg.Value("jszhou2.tt").GetString(), "haha", "not equal")
+	assertEqual(t, cfg.Value("jszhou2.woqu.dddd").GetString(), "ddd", "not equal")
+	assertEqual(t, cfg.Values("jszhou2.tt")[1].GetString(), "tdfsdfd", "not equal")
+	assertEqual(t, cfg.Values("jszhou2.tt")[0].GetString(), "haha", "not equal")
 }
