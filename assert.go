@@ -1,5 +1,5 @@
 // assert
-package cfg
+package kolonsecfg
 
 import (
 	"errors"

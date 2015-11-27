@@ -6,7 +6,7 @@ key:{} 表示关键字key下有一组属性是key:value的列表
 key:[] 表示关键字 key的属性是一个数组
 "" 表示一串字符串
 */
-package cfg
+package kolonsecfg
 
 import (
 	"errors"

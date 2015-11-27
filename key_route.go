@@ -1,5 +1,5 @@
 // key_route
-package cfg
+package kolonsecfg
 
 import (
 	"errors"

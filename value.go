@@ -1,5 +1,5 @@
 // value
-package cfg
+package kolonsecfg
 
 import (
 	"errors"
