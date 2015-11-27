@@ -196,37 +196,12 @@ func (cfg *Cfg) Dump() string {
 	return cfg.root.Dump("")
 }
 
-func (cfg *Cfg) Value(key string) *Node {
-	kr := NewKeyRoute()
-	kr.parse(key)
-	find := func(root *Node, k string) *Node {
-		return root.Child(k)
-	}
-	n := cfg.root.Child(kr.next())
-	for !kr.end() {
-		n = find(n, kr.next())
-	}
-	return n
+func (cfg *Cfg) Child(key string) *Node {
+	return cfg.root.Child(key)
 }
 
-func (cfg *Cfg) Values(key string) []*Node {
-	kr := NewKeyRoute()
-	kr.parse(key)
-	find := func(root []*Node, k string) []*Node {
-		var ret []*Node
-		for _, r := range root {
-			ns := r.Childs(k)
-			if ns != nil {
-				ret = append(ret, ns...)
-			}
-		}
-		return ret
-	}
-	n := cfg.root.Childs(kr.next())
-	for !kr.end() {
-		n = find(n, kr.next())
-	}
-	return n
+func (cfg *Cfg) Childs(key string) []*Node {
+	return cfg.root.Childs(key)
 }
 
 func NewCfg() *Cfg {

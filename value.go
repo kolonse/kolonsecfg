@@ -4,6 +4,7 @@ package kolonsecfg
 import (
 	"errors"
 	"reflect"
+	"strconv"
 )
 
 type Value struct {
@@ -17,8 +18,19 @@ type Value struct {
 }
 
 func (v *Value) GetBool() bool {
-	AssertEqual(v.ValueType, BOOL, "Not Bool")
-	return v.Bool
+	b, err := strconv.ParseBool(v.String)
+	if err != nil {
+		panic(err)
+	}
+	return b
+}
+
+func (v *Value) GetInt() int64 {
+	i, err := strconv.ParseInt(v.String, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	return i
 }
 
 func (v *Value) GetString() string {

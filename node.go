@@ -67,7 +67,7 @@ func (n *Node) AddChild(child *Node) *Node {
 	return n
 }
 
-func (n *Node) Childs(key string) []*Node {
+func (n *Node) getChilds(key string) []*Node {
 	nodes, ok := n.childs[key]
 	if !ok {
 		return nil
@@ -75,12 +75,45 @@ func (n *Node) Childs(key string) []*Node {
 	return nodes.Get()
 }
 
-func (n *Node) Child(key string) *Node {
+func (n *Node) getChild(key string) *Node {
 	nodes, ok := n.childs[key]
 	if !ok {
 		return nil
 	}
 	return nodes.Get()[0]
+}
+
+func (n *Node) Childs(key string) []*Node {
+	kr := NewKeyRoute()
+	kr.parse(key)
+	find := func(root []*Node, k string) []*Node {
+		var ret []*Node
+		for _, r := range root {
+			ns := r.getChilds(k)
+			if ns != nil {
+				ret = append(ret, ns...)
+			}
+		}
+		return ret
+	}
+	nd := n.getChilds(kr.next())
+	for !kr.end() {
+		nd = find(nd, kr.next())
+	}
+	return nd
+}
+
+func (n *Node) Child(key string) *Node {
+	kr := NewKeyRoute()
+	kr.parse(key)
+	find := func(root *Node, k string) *Node {
+		return root.getChild(k)
+	}
+	nd := n.getChild(kr.next())
+	for !kr.end() {
+		nd = find(nd, kr.next())
+	}
+	return nd
 }
 
 func (n *Node) Dump(suffix string) string {
