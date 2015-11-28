@@ -97,7 +97,7 @@ func (n *Node) Childs(key string) []*Node {
 		return ret
 	}
 	nd := n.getChilds(kr.next())
-	for !kr.end() {
+	for !kr.end() && nd != nil {
 		nd = find(nd, kr.next())
 	}
 	return nd
@@ -110,7 +110,7 @@ func (n *Node) Child(key string) *Node {
 		return root.getChild(k)
 	}
 	nd := n.getChild(kr.next())
-	for !kr.end() {
+	for !kr.end() && nd != nil {
 		nd = find(nd, kr.next())
 	}
 	return nd
