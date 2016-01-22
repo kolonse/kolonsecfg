@@ -1,6 +1,8 @@
 package kolonsecfg
 
-import ()
+import (
+	"regexp"
+)
 
 const (
 	ONCE_CAP_LEN = 10
@@ -120,7 +122,13 @@ func (n *Node) Dump(suffix string) string {
 	ret := ""
 	// node 值不为空时进行打印
 	if n.key != "" && n.Value != nil && n.Value.ValueType != INVALID {
-		ret += suffix + n.key + " " + n.Value.GetString() + "\n"
+		str := n.Value.GetString()
+
+		// 如果字符串两边只要有一端有空格 那么就需要增加 ""
+		if regexp.MustCompile(`^((([ \t]+)?.+[ \t]+)|([ \t]+.+([ \t]+)?))$`).MatchString(str) {
+			str = "\"" + str + "\""
+		}
+		ret += suffix + n.key + " " + str + "\n"
 	} else if n.key != "" {
 		ret += suffix + n.key + " {\n"
 		for _, nodes := range n.childs {

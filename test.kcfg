@@ -6,9 +6,10 @@ test 3
 test 3 45
 jszhou2 {
 	tt haha
-	tt tdfsdfd
+	tt tdfsdfd/$dev
 	woqu [
-		dddd ddd
+		dddd "ddd     "
+		hahah $dev
 	]
 }
 	

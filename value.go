@@ -1,10 +1,13 @@
 // value
+//+ 配置文件支持 $name 配置  name 为使用的变量名字 必须为 a.b.c、a 等格式
 package kolonsecfg
 
 import (
 	"errors"
 	"reflect"
+	"regexp"
 	"strconv"
+	"strings"
 )
 
 type Value struct {
@@ -35,7 +38,42 @@ func (v *Value) GetInt() int64 {
 
 func (v *Value) GetString() string {
 	AssertEqual(v.ValueType, STRING, "Not String")
+	//	if v.IsVars() { // 如果值是变量类型 那么需要将变量名字返回
+	//		reg := regexp.MustCompile(`^\$(.+)`)
+	//		return reg.ReplaceAllString(v.String, "$1")
+	//	} else if regexp.MustCompile(`^\\\$(.+)`).MatchString(v.String) {
+	//		return v.String[1:]
+	//	}
 	return v.String
+}
+
+func (v *Value) SetString(value string) {
+	//+ @2016.1.21 by kolonse
+	//+ 将左右的空白处去除 如果左右 ""  那么表示该段内容就是字符串 将该段内容进行复制
+	v.String = regexp.MustCompile(`^(.+?)[ \t]+$`).ReplaceAllString(value, "$1")
+	v.String = regexp.MustCompile(`^[ \t]+(.+)$`).ReplaceAllString(v.String, "$1")
+	v.String = regexp.MustCompile(`^"(.+)"$`).ReplaceAllString(v.String, "$1")
+}
+
+// 判断值是否包含变量类型也就是 $xxx 方式
+func (v *Value) IsVars() bool {
+	reg := regexp.MustCompile(`\$([a-zA-Z\.]+)`)
+	return reg.MatchString(v.String)
+}
+
+// 获取到所有变量名字
+func (v *Value) GetVarsName() []string {
+	reg := regexp.MustCompile(`\$([a-zA-Z\.]+)`)
+	vars := reg.FindAllString(v.String, len(v.String))
+	var ret []string
+	for _, name := range vars {
+		ret = append(ret, name[1:])
+	}
+	return ret
+}
+
+func (v *Value) ParseVarsName(name, value string) {
+	v.String = strings.Replace(v.String, "$"+name, value, -1)
 }
 
 func NewValue(valueType int, v interface{}) *Value {
@@ -58,7 +96,8 @@ func NewValue(valueType int, v interface{}) *Value {
 		}
 	case STRING:
 		if t == reflect.String {
-			value.String = v.(string)
+			value.SetString(v.(string))
+			//			value.String = v.(string)
 		} else {
 			panic(errors.New("数值类型非 string 类型,而是 " + reflect.TypeOf(v).String()))
 		}

@@ -27,6 +27,7 @@ type Cfg struct {
 	root    *Node
 	path    string
 	content string
+	vars    []*Value
 }
 
 func (cfg *Cfg) readFile(path string) string {
@@ -145,6 +146,9 @@ func (cfg *Cfg) parseValue(content string, key string, offset int) (*Node, int) 
 			n := NewNode(key)
 			value, index := cfg.parseString(content, i)
 			v := NewValue(STRING, value)
+			if v.IsVars() {
+				cfg.vars = append(cfg.vars, v)
+			}
 			n.SetValue(v)
 			return n, index
 		}
@@ -188,6 +192,13 @@ func (cfg *Cfg) ParseFile(path string) *Cfg {
 func (cfg *Cfg) ParseByString(content string) *Cfg {
 	cfg.content = content
 	cfg.parseByString(content, cfg.root)
+	// 进行一次遍历 将所有的变量进行替换成最新值
+	for _, v := range cfg.vars {
+		vars := v.GetVarsName()
+		for _, name := range vars {
+			v.ParseVarsName(name, cfg.Child(name).GetString())
+		}
+	}
 	return cfg
 }
 
